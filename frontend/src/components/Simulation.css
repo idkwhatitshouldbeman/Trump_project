@@ -1,0 +1,141 @@
+.simulation {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.simulation-controls {
+  background: white;
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.9rem;
+}
+
+.control-group button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-group button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.control-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-group select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.optimize-button {
+  background: #27ae60 !important;
+  color: white !important;
+  border-color: #27ae60 !important;
+  font-weight: 600;
+}
+
+.optimize-button:hover:not(:disabled) {
+  background: #229954 !important;
+}
+
+.simulation-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.simulation-canvas {
+  flex: 1;
+  border: 1px solid #ddd;
+  background: white;
+  width: 100%;
+  height: 100%;
+  min-width: 800px;
+  min-height: 600px;
+}
+
+.simulation-sidebar {
+  width: 250px;
+  background: white;
+  border-left: 1px solid #ddd;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.simulation-sidebar h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: #f8f8f8;
+  border-radius: 4px;
+}
+
+.metric-item label {
+  font-weight: 500;
+  color: #666;
+}
+
+.metric-item span {
+  font-weight: 600;
+  color: #333;
+}
+
+.optimization-progress {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #e8f5e9;
+  border-radius: 4px;
+}
+
+.optimization-progress h4 {
+  margin: 0 0 0.75rem 0;
+  color: #2e7d32;
+}
+
+.progress-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.progress-item label {
+  color: #666;
+}
+
+.progress-item span {
+  font-weight: 600;
+  color: #2e7d32;
+}

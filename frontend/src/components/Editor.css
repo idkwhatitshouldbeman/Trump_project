@@ -1,0 +1,179 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.editor-toolbar {
+  background: white;
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.grid-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.grid-control-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  cursor: pointer;
+}
+
+.grid-control-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.grid-scale-input {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.unit-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 1rem;
+}
+
+.unit-select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.editor-toolbar h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.toolbar-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.toolbar-buttons button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-buttons button:hover {
+  background: #f0f0f0;
+}
+
+.toolbar-buttons button.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+.toolbar-buttons button.primary {
+  background: #27ae60;
+  color: white;
+  border-color: #27ae60;
+  font-weight: 600;
+}
+
+.toolbar-buttons button.primary:hover {
+  background: #229954;
+}
+
+.toolbar-buttons button.danger {
+  background: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+.toolbar-buttons button.danger:hover {
+  background: #c0392b;
+}
+
+.editor-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.editor-canvas {
+  flex: 1;
+  border: 1px solid #ddd;
+  cursor: crosshair;
+  background: white;
+  width: 100%;
+  height: 100%;
+  min-width: 800px;
+  min-height: 600px;
+}
+
+.editor-sidebar {
+  width: 250px;
+  background: white;
+  border-left: 1px solid #ddd;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.editor-sidebar h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.editor-sidebar h4 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.element-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.element-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8f8f8;
+  border-radius: 4px;
+}
+
+.element-item button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.element-item button:hover {
+  background: #c0392b;
+}

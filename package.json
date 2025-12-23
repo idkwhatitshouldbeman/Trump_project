@@ -1,0 +1,13 @@
+{
+  "name": "trump-project",
+  "version": "1.0.0",
+  "description": "AI-powered store layout optimization",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "install-all": "npm install && cd frontend && npm install"
+  },
+  "keywords": ["ai", "optimization", "store-layout"],
+  "author": "",
+  "license": "MIT"
+}

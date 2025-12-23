@@ -1,0 +1,290 @@
+Perfect! Here's the updated prompt:
+
+CURSOR PROMPT
+Create a web application for AI-powered store layout optimization. This is for a presidential AI competition.
+
+=== CORE CONCEPT ===
+Users draw their store layout in a simple 2D editor. AI customers simulate realistic shopping behavior (not perfect pathfinding - they make human decisions based on what they see). The system iterates through layout variations to find optimal designs that minimize congestion.
+
+=== TECH STACK ===
+- Frontend: React with Vite (easy to deploy to Vercel/Netlify later)
+- Backend: Serverless-ready API routes (compatible with Vercel/Netlify Functions)
+- AI: OpenRouter API (free models like Gemini Flash or Llama) with Ollama as backup for local development
+- Canvas for visualization
+- Local development on localhost, deployment-ready for Vercel/Netlify
+
+=== PROJECT STRUCTURE ===
+Use a monorepo structure that works for both local and serverless deployment:
+/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Editor.jsx (CAD drawing tool)
+│   │   │   ├── Simulation.jsx (visualization)
+│   │   │   ├── Dashboard.jsx (results)
+│   │   ├── utils/
+│   │   │   ├── aiCustomer.js (AI decision making)
+│   │   │   ├── simulationEngine.js (run simulation)
+│   │   │   ├── geneticOptimizer.js (layout optimization)
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── package.json
+├── api/ (serverless functions for deployment)
+│   ├── simulate.js (runs AI customer simulation)
+│   ├── optimize.js (genetic algorithm)
+├── package.json (root)
+├── README.md
+
+=== ARCHITECTURE NOTES ===
+- For local development: Run frontend with Vite dev server (localhost:5173)
+- AI calls should work client-side (OpenRouter API) OR server-side (for Ollama backup)
+- Heavy computation (genetic algorithm) can run client-side for now
+- Code should be modular so simulation logic can easily move to serverless functions later
+- Use environment variables for API keys (.env file, not committed)
+
+=== FEATURES TO BUILD ===
+
+1. STORE LAYOUT EDITOR (Simple 2D CAD)
+- Canvas where users can draw lines (walls) by clicking points
+- Click to place special markers:
+  * Entrance (green marker) - click to place
+  * Exit (red marker) - click to place
+  * Checkout counters (blue markers) - click to place multiple
+  * Product sections (rectangles with labels) - click and drag to create, prompt for label like "Produce", "Dairy", "Bakery"
+- Toolbar with buttons: "Draw Wall", "Place Entrance", "Place Exit", "Add Checkout", "Add Product Section"
+- Each element should be clickable to edit/delete
+- "Clear All" button
+- "Export Layout" button to see JSON structure
+- "Start Simulation" button to begin optimization
+- Save layout to browser localStorage so user doesn't lose work
+
+2. AI CUSTOMER SIMULATION
+Each customer is an AI agent with:
+- Shopping list (random 3-5 items from available product sections)
+- Current position (x, y coordinates)
+- Field of view (calculate what products they can see from their position)
+- Vision range (e.g., 100 pixels radius)
+- Speed (moves N pixels per frame)
+- Status: shopping, heading to checkout, or exiting
+
+Every simulation step (run at 10 FPS):
+- For each customer, calculate what they can see:
+  * Product sections within vision range
+  * Distance to each visible section
+  * Crowd density near each section (count customers within radius)
+- Every 2 seconds of simulation time, make an AI decision:
+  * Build prompt: "You are shopping in a store. You can see: Produce (15 feet away, 3 people there), Dairy (25 feet away, 1 person there), Bakery (30 feet away, 5 people there). Your shopping list needs: [bread, milk]. You already have: []. Where do you go next? Respond with ONLY the section name, 'checkout', or 'exit'. Be realistic - you might avoid crowded areas."
+  * Send to AI (OpenRouter API)
+  * AI responds with decision
+  * Customer sets that as their target destination
+- Between AI decisions, customer moves toward current target using simple direct movement
+- When customer reaches a product section on their list, mark it as collected (wait 3 seconds, then make next decision)
+- When all items collected, head to checkout
+- At checkout, wait 5 seconds, then head to exit
+
+Collision avoidance: 
+- Customers slow down when within 20 pixels of another customer
+- Customers try to path around obstacles (simple obstacle avoidance, not A*)
+- Customers never overlap
+
+Spawn pattern:
+- New customer enters every 5 seconds from entrance
+- Max 50 customers in store at once
+- Each customer has random shopping list
+
+3. AI INTEGRATION
+- Use OpenRouter API: https://openrouter.ai/api/v1/chat/completions
+- Recommended free models: "google/gemini-flash-1.5-8b" or "meta-llama/llama-3.2-3b-instruct:free"
+- API key from environment variable: process.env.VITE_OPENROUTER_API_KEY
+- Request format:
+```javascript
+  fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-flash-1.5-8b',
+      messages: [{role: 'user', content: prompt}]
+    })
+  })
+```
+- Fallback for local development: Connect to Ollama at http://localhost:11434/api/generate
+- Handle API errors gracefully (if AI fails, customer makes random decision)
+- Optional: Cache similar decisions to reduce API calls (if customer sees same scene, reuse previous decision)
+
+4. SIMULATION VISUALIZATION
+- Canvas showing:
+  * Store layout (walls as lines, sections as labeled rectangles)
+  * Entrance (green circle), Exit (red circle), Checkouts (blue rectangles)
+  * Customers as colored dots (color = status: shopping=yellow, heading to checkout=orange, exiting=green)
+  * Heat map overlay toggle (red = high congestion, green = low congestion)
+- Real-time metrics panel:
+  * Current simulation time
+  * Number of customers in store
+  * Average congestion score (0-100, higher = worse)
+  * Current bottleneck locations
+  * Avg time to complete shopping
+- Controls:
+  * Start/Pause/Stop buttons
+  * Speed slider (1x, 2x, 5x, 10x speed)
+  * Toggle heat map on/off
+  * "Run Optimization" button
+
+5. LAYOUT OPTIMIZATION (Genetic Algorithm)
+When user clicks "Run Optimization":
+
+Initialize:
+- Population size: 20 layouts
+- Generations: User can stop anytime, or auto-stop after 50 generations
+- Generate initial population by modifying the user's layout:
+  * Keep entrance, exit, and walls fixed
+  * Randomly swap positions of product sections
+  * Randomly move checkout counters
+  * Create 20 variations
+
+For each generation:
+1. EVALUATION: For each layout in population:
+   - Run simulation with 30 customers until all exit (or 5 min simulation time max)
+   - Calculate fitness score:
+     * Lower average congestion = better
+     * Fewer bottlenecks = better
+     * Lower average shopping time = better
+     * Fitness = 1000 - (avgCongestion * 5) - (bottleneckCount * 10) - (avgTime * 2)
+
+2. SELECTION: 
+   - Sort layouts by fitness
+   - Keep top 30% (6 layouts)
+
+3. CROSSOVER:
+   - Take pairs of top layouts
+   - Create children by mixing their product section positions
+   - Generate 10 children total
+
+4. MUTATION:
+   - Randomly modify 20% of children:
+     * Swap two random product sections
+     * Move a checkout counter slightly
+     * Resize a section
+
+5. NEW GENERATION:
+   - Combine survivors + children = 20 layouts
+   - Repeat
+
+Display progress:
+- Show current generation number
+- Show best fitness so far
+- Visualize best layout found so far with its heat map
+- Allow user to stop optimization early
+
+6. RESULTS DASHBOARD
+After optimization (or user stops it):
+- Show side-by-side comparison:
+  * Original layout (left) with heat map
+  * Best optimized layout (right) with heat map
+- Metrics comparison table:
+  * Congestion score: Original vs Optimized (% improvement)
+  * Avg shopping time: Original vs Optimized
+  * Bottleneck count: Original vs Optimized
+- Visual indicators showing what changed (arrows showing which sections moved)
+- Buttons:
+  * "Download Optimized Layout" (JSON export)
+  * "Export as Image" (PNG of the layout)
+  * "Use This Layout" (loads optimized layout into editor)
+  * "Run Again" (run optimization with different random seeds)
+
+=== IMPORTANT IMPLEMENTATION DETAILS ===
+
+AI Customer Behavior (Critical for competition judges):
+- Customers should make HUMAN-LIKE decisions, not optimal pathfinding
+- Example realistic behaviors:
+  * "I see produce is crowded, I'll get dairy first even though it's farther"
+  * "Bakery is close and empty, maybe I'll browse even though it's not on my list"
+  * "Checkout line looks long, I'll grab one more item while I wait for it to clear"
+- This is what makes it AI-powered vs algorithmic!
+
+Performance optimizations:
+- Don't make AI call for EVERY customer EVERY frame
+- Make AI decisions every 2-3 seconds per customer, coast between decisions
+- Batch AI requests if possible
+- Use Web Workers for heavy computation if needed
+
+Deployment readiness:
+- Use environment variables for all config
+- Make sure CORS is handled
+- Keep state management simple (React Context or Zustand)
+- Minimize bundle size
+
+=== MVP SCOPE (Build in this order) ===
+
+Phase 1 - Editor:
+- [ ] Canvas with click-to-draw walls
+- [ ] Place entrance, exit, checkouts, product sections
+- [ ] Labels for sections
+- [ ] Save/load from localStorage
+
+Phase 2 - Basic Simulation:
+- [ ] Spawn customers at entrance
+- [ ] Customers move toward random sections
+- [ ] Simple collision avoidance
+- [ ] Visualize as dots
+- [ ] Track positions for congestion
+
+Phase 3 - AI Integration:
+- [ ] Connect to OpenRouter
+- [ ] Send "what do you see" prompts
+- [ ] Parse AI responses
+- [ ] Customers follow AI decisions
+
+Phase 4 - Metrics & Visualization:
+- [ ] Heat map overlay
+- [ ] Congestion scoring
+- [ ] Bottleneck detection
+- [ ] Real-time metrics display
+
+Phase 5 - Optimization:
+- [ ] Genetic algorithm implementation
+- [ ] Generate layout variations
+- [ ] Run simulations on each
+- [ ] Track best layouts
+- [ ] Show progress
+
+Phase 6 - Results & Polish:
+- [ ] Comparison dashboard
+- [ ] Export functionality
+- [ ] UI polish
+- [ ] Error handling
+
+=== SETUP INSTRUCTIONS (for README) ===
+
+Local Development:
+1. Clone repo
+2. `npm install`
+3. Create `.env` file with: `VITE_OPENROUTER_API_KEY=your_key_here`
+4. Get free API key from https://openrouter.ai
+5. `npm run dev`
+6. Open http://localhost:5173
+
+Optional Ollama setup (backup AI):
+1. Install Ollama from https://ollama.ai
+2. Run `ollama pull llama3.2`
+3. Ollama will auto-start on localhost:11434
+
+Future Deployment (Vercel/Netlify):
+1. Push to GitHub
+2. Connect to Vercel/Netlify
+3. Add OPENROUTER_API_KEY to environment variables
+4. Deploy!
+
+=== KEY SUCCESS FACTORS FOR COMPETITION ===
+
+1. **Visual Impact**: Judges need to SEE the AI making decisions. Show thought bubbles or decision logs.
+2. **Clear Improvement**: Before/after comparison must be obvious and quantified.
+3. **Realistic Behavior**: Emphasize that customers don't perfectly pathfind - they behave like real people.
+4. **Generative Design**: Show multiple iterations improving over time, like Fusion 360.
+5. **Practical Application**: This solves a real problem for real stores.
+
+Make the demo impressive - this should wow the judges!

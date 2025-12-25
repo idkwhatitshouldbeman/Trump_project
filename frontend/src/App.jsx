@@ -28,8 +28,47 @@ function App() {
     }
   }, [layout])
 
+  const processLayout = (rawLayout) => {
+    if (!rawLayout || !rawLayout.elements) return rawLayout
+
+    const processed = {
+      walls: [],
+      entrances: [],
+      exits: [],
+      products: [],
+      checkouts: [],
+      ...rawLayout // Keep other props
+    }
+
+    rawLayout.elements.forEach(el => {
+      if (el.type === 'wall' && el.points && el.points.length >= 2) {
+        // Convert polyline to segments
+        for (let i = 0; i < el.points.length - 1; i++) {
+          processed.walls.push({
+            start: el.points[i],
+            end: el.points[i + 1]
+          })
+        }
+      } else if (el.type === 'entrance') {
+        processed.entrances.push(el)
+        // Also track single entrance for simple access if needed
+        processed.entrance = el
+      } else if (el.type === 'exit') {
+        processed.exits.push(el)
+        processed.exit = el
+      } else if (el.type === 'product') {
+        processed.products.push({
+          ...el,
+          label: el.name // Ensure label field exists
+        })
+      } else if (el.type === 'checkout') {
+        processed.checkouts.push(el)
+      }
+    })
+    return processed
+  }
+
   const handleStartSimulation = (layoutData) => {
-    setLayout(layoutData)
     setCurrentView('simulation')
   }
 
@@ -47,20 +86,20 @@ function App() {
       <header className="app-header">
         <h1>AI Store Layout Optimizer</h1>
         <nav>
-          <button 
+          <button
             onClick={() => setCurrentView('editor')}
             className={currentView === 'editor' ? 'active' : ''}
           >
             Editor
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('simulation')}
             className={currentView === 'simulation' ? 'active' : ''}
             disabled={!layout}
           >
             Simulation
           </button>
-          <button 
+          <button
             onClick={() => setCurrentView('dashboard')}
             className={currentView === 'dashboard' ? 'active' : ''}
             disabled={!optimizationResults}
@@ -72,20 +111,21 @@ function App() {
 
       <main className="app-main">
         {currentView === 'editor' && (
-          <Editor 
-            initialLayout={layout}
+          <Editor
+            layout={layout || { elements: [] }}
+            onLayoutChange={setLayout}
             onStartSimulation={handleStartSimulation}
           />
         )}
         {currentView === 'simulation' && layout && (
-          <Simulation 
-            layout={layout}
+          <Simulation
+            layout={processLayout(layout)}
             onOptimizationComplete={handleOptimizationComplete}
             onBack={handleBackToEditor}
           />
         )}
         {currentView === 'dashboard' && optimizationResults && (
-          <Dashboard 
+          <Dashboard
             results={optimizationResults}
             onBack={handleBackToEditor}
           />

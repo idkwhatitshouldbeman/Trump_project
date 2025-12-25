@@ -131,3 +131,5 @@ Tested browsers:
 - Heat map updates every frame (may be slow on low-end devices)
 
 
+
+

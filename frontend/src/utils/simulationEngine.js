@@ -1,9 +1,10 @@
 // Simulation engine for running customer simulations
 
 export class SimulationEngine {
-  constructor(layout, onUpdate) {
+  constructor(layout, onUpdate, apiKey = null) {
     this.layout = layout
     this.onUpdate = onUpdate
+    this.apiKey = apiKey
     this.customers = []
     this.time = 0
     this.lastSpawnTime = 0
@@ -15,7 +16,7 @@ export class SimulationEngine {
     this.animationFrame = null
     this.lastFrameTime = Date.now()
     this.speedMultiplier = 1
-    
+
     // Metrics
     this.metrics = {
       totalCustomers: 0,
@@ -68,8 +69,8 @@ export class SimulationEngine {
     this.time += deltaTime
 
     // Spawn new customers
-    if (this.time - this.lastSpawnTime >= this.spawnInterval && 
-        this.customers.length < this.maxCustomers) {
+    if (this.time - this.lastSpawnTime >= this.spawnInterval &&
+      this.customers.length < this.maxCustomers) {
       this.spawnCustomer()
       this.lastSpawnTime = this.time
     }
@@ -123,11 +124,23 @@ export class SimulationEngine {
   }
 
   spawnCustomer() {
-    if (!this.layout.entrances || this.layout.entrances.length === 0) return
+    // Handle both formats: direct entrance point or wall-based entrance
+    let entrancePos = null
 
-    // Pick a random entrance
-    const entrance = this.layout.entrances[Math.floor(Math.random() * this.layout.entrances.length)]
-    const entrancePos = this.getEntrancePosition(entrance)
+    if (this.layout.entrance) {
+      // Direct point format
+      entrancePos = { x: this.layout.entrance.x, y: this.layout.entrance.y }
+    } else if (this.layout.entrances && this.layout.entrances.length > 0) {
+      // Wall-based format
+      const entrance = this.layout.entrances[Math.floor(Math.random() * this.layout.entrances.length)]
+      if (entrance.wallIndex) {
+        entrancePos = this.getEntrancePosition(entrance)
+      } else {
+        // Fallback for missing wallIndex
+        entrancePos = { x: entrance.x, y: entrance.y }
+      }
+    }
+
     if (!entrancePos) return
 
     const shoppingList = this.generateShoppingList()
@@ -189,7 +202,7 @@ export class SimulationEngine {
   async makeCustomerDecision(customer) {
     // Calculate visible sections
     const visibleSections = this.getVisibleSections(customer)
-    
+
     // Import AI decision maker
     const { makeAIDecision } = await import('./aiCustomer.js')
     const decision = await makeAIDecision(
@@ -215,26 +228,34 @@ export class SimulationEngine {
       customer.currentTarget = checkout
       customer.targetType = 'checkout'
       customer.status = 'checkout'
-    } else if (decision.type === 'exit' && this.layout.exits && this.layout.exits.length > 0) {
-      // Pick closest exit
-      let closestExit = null
-      let minDist = Infinity
-      for (const exit of this.layout.exits) {
-        const exitPos = this.getExitPosition(exit)
-        if (exitPos) {
-          const dx = exitPos.x - customer.x
-          const dy = exitPos.y - customer.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < minDist) {
-            minDist = dist
-            closestExit = exitPos
+    } else if (decision.type === 'exit') {
+      // Handle both formats: direct exit point or wall-based exit
+      let exitPos = null
+
+      if (this.layout.exit) {
+        // Direct point format
+        exitPos = { x: this.layout.exit.x, y: this.layout.exit.y }
+      } else if (this.layout.exits && this.layout.exits.length > 0) {
+        // Wall-based format - pick closest exit
+        let minDist = Infinity
+        for (const exit of this.layout.exits) {
+          const pos = this.getExitPosition(exit)
+          if (pos) {
+            const dx = pos.x - customer.x
+            const dy = pos.y - customer.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < minDist) {
+              minDist = dist
+              exitPos = pos
+            }
           }
         }
       }
-      if (closestExit) {
-        customer.targetX = closestExit.x
-        customer.targetY = closestExit.y
-        customer.currentTarget = closestExit
+
+      if (exitPos) {
+        customer.targetX = exitPos.x
+        customer.targetY = exitPos.y
+        customer.currentTarget = exitPos
         customer.targetType = 'exit'
         customer.status = 'exiting'
       }
@@ -243,7 +264,7 @@ export class SimulationEngine {
 
   getVisibleSections(customer) {
     const visible = []
-    
+
     for (const product of this.layout.products) {
       const centerX = product.x + product.width / 2
       const centerY = product.y + product.height / 2
@@ -254,7 +275,7 @@ export class SimulationEngine {
       if (distance <= customer.visionRange) {
         // Check if line of sight is blocked by walls (simplified)
         const hasLineOfSight = this.checkLineOfSight(customer.x, customer.y, centerX, centerY)
-        
+
         if (hasLineOfSight) {
           const crowdCount = this.countCustomersNear(centerX, centerY, 30)
           visible.push({
@@ -318,20 +339,20 @@ export class SimulationEngine {
     let speed = customer.speed
     if (nearbyCustomers.length > 0) {
       speed *= 0.5 // Slow down near other customers
-      
+
       // Try to move around
       const angle = Math.atan2(dy, dx)
       const avoidAngle = angle + (Math.random() - 0.5) * 0.5
       const moveX = Math.cos(avoidAngle) * speed * (deltaTime / 1000)
       const moveY = Math.sin(avoidAngle) * speed * (deltaTime / 1000)
-      
+
       customer.x += moveX
       customer.y += moveY
     } else {
       // Normal movement
       const moveX = (dx / distance) * speed * (deltaTime / 1000)
       const moveY = (dy / distance) * speed * (deltaTime / 1000)
-      
+
       customer.x += moveX
       customer.y += moveY
     }
@@ -350,8 +371,8 @@ export class SimulationEngine {
       if (customer.targetType === 'product' && customer.currentTarget) {
         // Check if this product is on shopping list
         const productName = customer.currentTarget.label
-        if (customer.shoppingList.includes(productName) && 
-            !customer.collected.includes(productName)) {
+        if (customer.shoppingList.includes(productName) &&
+          !customer.collected.includes(productName)) {
           customer.collected.push(productName)
           customer.waitTime = 3000 // Wait 3 seconds at product
         }
@@ -360,27 +381,29 @@ export class SimulationEngine {
           customer.waitTime = 5000 // Wait 5 seconds at checkout
           customer.status = 'exiting'
           // Set exit as next target
-          if (this.layout.exits && this.layout.exits.length > 0) {
+          let exitPos = null
+          if (this.layout.exit) {
+            exitPos = { x: this.layout.exit.x, y: this.layout.exit.y }
+          } else if (this.layout.exits && this.layout.exits.length > 0) {
             // Pick closest exit
-            let closestExit = null
             let minDist = Infinity
             for (const exit of this.layout.exits) {
-              const exitPos = this.getExitPosition(exit)
-              if (exitPos) {
-                const dx = exitPos.x - customer.x
-                const dy = exitPos.y - customer.y
+              const pos = this.getExitPosition(exit)
+              if (pos) {
+                const dx = pos.x - customer.x
+                const dy = pos.y - customer.y
                 const dist = Math.sqrt(dx * dx + dy * dy)
                 if (dist < minDist) {
                   minDist = dist
-                  closestExit = exitPos
+                  exitPos = pos
                 }
               }
             }
-            if (closestExit) {
-              customer.targetX = closestExit.x
-              customer.targetY = closestExit.y
-              customer.targetType = 'exit'
-            }
+          }
+          if (exitPos) {
+            customer.targetX = exitPos.x
+            customer.targetY = exitPos.y
+            customer.targetType = 'exit'
           }
         }
       } else if (customer.targetType === 'exit') {

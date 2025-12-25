@@ -3,8 +3,9 @@
 import { SimulationEngine } from './simulationEngine.js'
 
 export class GeneticOptimizer {
-  constructor(originalLayout, onProgress) {
+  constructor(originalLayout, apiKey, onProgress) {
     this.originalLayout = JSON.parse(JSON.stringify(originalLayout)) // Deep copy
+    this.apiKey = apiKey
     this.onProgress = onProgress
     this.populationSize = 20
     this.generation = 0
@@ -136,7 +137,7 @@ export class GeneticOptimizer {
 
   async evaluateLayout(layout) {
     return new Promise((resolve) => {
-      const engine = new SimulationEngine(layout, () => {})
+      const engine = new SimulationEngine(layout, () => {}, this.apiKey)
       
       let simulationTime = 0
       const maxTime = 5 * 60 * 1000 // 5 minutes max

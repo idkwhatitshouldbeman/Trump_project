@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
-export default function Editor({ initialLayout, onStartSimulation }) {
+export default function Editor({ layout: initialLayout, onLayoutChange, onStartSimulation }) {
   const canvasRef = useRef(null);
   const [tool, setTool] = useState('wall'); // wall, entrance, exit, checkout, product
   const [isDrawing, setIsDrawing] = useState(false);
@@ -210,6 +210,7 @@ export default function Editor({ initialLayout, onStartSimulation }) {
     };
     setLayout(newLayout);
     saveToLocalStorage(newLayout);
+    if (onLayoutChange) onLayoutChange(newLayout);
   };
 
   const handleCanvasClick = (e) => {
@@ -290,6 +291,7 @@ export default function Editor({ initialLayout, onStartSimulation }) {
       };
       setLayout(newLayout);
       saveToLocalStorage(newLayout);
+      if (onLayoutChange) onLayoutChange(newLayout);
       setSelectedElement(null);
     }
   };
@@ -299,6 +301,7 @@ export default function Editor({ initialLayout, onStartSimulation }) {
       const newLayout = { elements: [] };
       setLayout(newLayout);
       saveToLocalStorage(newLayout);
+      if (onLayoutChange) onLayoutChange(newLayout);
       setSelectedElement(null);
     }
   };

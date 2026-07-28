@@ -48,20 +48,13 @@ export default function Simulation({ layout, onOptimizationComplete, onBack }) {
     drawLayout(ctx)
 
     // Draw heat map if enabled
-    if (showHeatMap && simulationData.congestionMap) {
-      drawHeatMap(ctx, simulationData.congestionMap)
+    if (showHeatMap && simulationData.metrics && simulationData.metrics.congestionData) {
+      drawHeatMap(ctx, simulationData.metrics.congestionData)
     }
 
     // Draw customers
     simulationData.customers.forEach(customer => {
       drawCustomer(ctx, customer)
-    })
-
-    // Continue animation
-    animationFrameRef.current = requestAnimationFrame(() => {
-      if (simulationData) {
-        drawSimulation()
-      }
     })
   }
 
@@ -256,7 +249,7 @@ export default function Simulation({ layout, onOptimizationComplete, onBack }) {
 
   const runEvaluationSimulation = (layoutToTest) => {
     return new Promise((resolve) => {
-      const maxTime = 300 // 5 minutes
+      const maxTime = 5 * 60 * 1000 // 5 minutes (ms, matches engine.time)
       let metrics = null
 
       const engine = new SimulationEngine(layoutToTest, (update) => {
@@ -276,7 +269,7 @@ export default function Simulation({ layout, onOptimizationComplete, onBack }) {
           metrics = engine.metrics
           resolve(metrics)
         }
-      }, maxTime * 1000 + 10000)
+      }, maxTime + 10000)
     })
   }
 

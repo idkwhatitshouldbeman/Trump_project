@@ -37,60 +37,82 @@ export default function Dashboard({ results, onBack }) {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     // Draw heat map if metrics available
-    if (metrics && metrics.congestionMap) {
-      drawHeatMap(ctx, metrics.congestionMap);
+    if (metrics && metrics.congestionData) {
+      drawHeatMap(ctx, metrics.congestionData);
     }
-    
-    // Draw layout elements
-    layout.elements.forEach((element) => {
-      if (element.type === 'wall') {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2;
-        if (element.points && element.points.length >= 2) {
-          ctx.beginPath();
-          ctx.moveTo(element.points[0].x, element.points[0].y);
-          for (let i = 1; i < element.points.length; i++) {
-            ctx.lineTo(element.points[i].x, element.points[i].y);
-          }
-          ctx.stroke();
-        }
-      } else if (element.type === 'entrance') {
-        ctx.fillStyle = '#00cc00';
+
+    // Draw from the simulation-format arrays (walls/products/checkouts/entrance/exit),
+    // since the optimizer mutates products and checkouts here (not layout.elements).
+    // Draw walls
+    if (layout.walls && layout.walls.length > 0) {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      layout.walls.forEach((wall) => {
+        const x1 = wall.start ? wall.start.x : wall.x1;
+        const y1 = wall.start ? wall.start.y : wall.y1;
+        const x2 = wall.end ? wall.end.x : wall.x2;
+        const y2 = wall.end ? wall.end.y : wall.y2;
         ctx.beginPath();
-        ctx.arc(element.x, element.y, 15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('IN', element.x, element.y + 4);
-      } else if (element.type === 'exit') {
-        ctx.fillStyle = '#cc0000';
-        ctx.beginPath();
-        ctx.arc(element.x, element.y, 15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('OUT', element.x, element.y + 4);
-      } else if (element.type === 'checkout') {
-        ctx.fillStyle = '#0066cc';
-        ctx.fillRect(element.x, element.y, element.width, element.height);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Checkout', element.x + element.width / 2, element.y + element.height / 2 + 4);
-      } else if (element.type === 'product') {
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      });
+    }
+
+    // Draw product sections
+    if (layout.products && layout.products.length > 0) {
+      layout.products.forEach((product) => {
         ctx.fillStyle = 'rgba(255, 200, 0, 0.3)';
-        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.fillRect(product.x, product.y, product.width, product.height);
         ctx.strokeStyle = '#ffaa00';
         ctx.lineWidth = 2;
-        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(product.x, product.y, product.width, product.height);
         ctx.fillStyle = '#000000';
         ctx.font = '14px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(element.name, element.x + element.width / 2, element.y + element.height / 2 + 5);
-      }
-    });
+        ctx.fillText(
+          product.label || product.name || 'Product',
+          product.x + product.width / 2,
+          product.y + product.height / 2 + 5
+        );
+      });
+    }
+
+    // Draw entrance
+    if (layout.entrance) {
+      ctx.fillStyle = '#00cc00';
+      ctx.beginPath();
+      ctx.arc(layout.entrance.x, layout.entrance.y, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('IN', layout.entrance.x, layout.entrance.y + 4);
+    }
+
+    // Draw exit
+    if (layout.exit) {
+      ctx.fillStyle = '#cc0000';
+      ctx.beginPath();
+      ctx.arc(layout.exit.x, layout.exit.y, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('OUT', layout.exit.x, layout.exit.y + 4);
+    }
+
+    // Draw checkouts (checkout.x/y is the counter center)
+    if (layout.checkouts && layout.checkouts.length > 0) {
+      layout.checkouts.forEach((checkout) => {
+        ctx.fillStyle = '#0066cc';
+        ctx.fillRect(checkout.x - 20, checkout.y - 10, 40, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Checkout', checkout.x, checkout.y + 4);
+      });
+    }
   };
 
   const drawHeatMap = (ctx, congestionMap) => {
